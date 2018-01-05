@@ -1,5 +1,7 @@
 package com.br.peralles.jira.jiradatamanagement;
 
+import com.br.peralles.jira.jiradatamanagement.rest.client.IssueLista;
+import com.br.peralles.jira.jiradatamanagement.rest.client.IssueNavigable;
 import com.br.peralles.jira.jiradatamanagement.rest.client.Quote;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.slf4j.Logger;
@@ -25,7 +27,10 @@ public class JiraDataManagementApplication {
 	public static void main(String[] args) {
 		//SpringApplication.run(JiraDataManagementApplication.class, args); //not using Spring boot
 
-		String url = "https://zupjira.atlassian.net/rest/api/2/project";
+		IssueNavigable issueNavigable = new IssueNavigable();
+
+		String urlProjeto = "https://zupjira.atlassian.net/rest/api/2/project";
+		String urlIssues = "https://zupjira.atlassian.net/rest/api/2/search?jql=project=ILBE&maxResults=10&fields=navigable";
 
 		RestTemplate restTemplate = new RestTemplate();
 		HttpHeaders httpHeaders = new HttpHeaders();
@@ -34,9 +39,23 @@ public class JiraDataManagementApplication {
 
 		HttpEntity<?> requestEntity = new HttpEntity(httpHeaders);
 
-		ResponseEntity<String> projetos = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+		ResponseEntity<IssueLista> issueListaGet = restTemplate.exchange(urlIssues, HttpMethod.GET, requestEntity, IssueLista.class);
 
-		Quote quote = restTemplate.getForObject("http://gturnquist-quoters.cfapps.io/api/random", Quote.class);
+		IssueLista issueLista = new IssueLista();
+		issueLista = issueListaGet.getBody();
+
+
+		/*
+			ObjectMapper mapper = new ObjectMapper();
+			String json;
+			json = projetos.getBody();
+
+			Map<Object, Object> map = new HashMap<Object, Object>();
+			map = mapper.readValue(json, new TypeReference<Map<Object, Object>>(){});
+			System.out.println(map);
+
+			Quote quote = restTemplate.getForObject("http://gturnquist-quoters.cfapps.io/api/random", Quote.class);
+		*/
 	}
 
 	static private HttpHeaders createHeadersWithAuthentication() {
