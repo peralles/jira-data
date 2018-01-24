@@ -45,4 +45,8 @@ public class IssueLista {
     {
         this.issues.add(issueNavigable);
     }
+
+    public IssueNavigable getIssue (int i){
+        return issues.get(i);
+    }
 }

@@ -1,23 +1,25 @@
 package com.br.peralles.jira.jiradatamanagement;
 
-import com.br.peralles.jira.jiradatamanagement.rest.client.IssueLista;
-import com.br.peralles.jira.jiradatamanagement.rest.client.IssueNavigable;
-import com.br.peralles.jira.jiradatamanagement.rest.client.Quote;
+import com.br.peralles.jira.jiradatamanagement.rest.client.*;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import java.nio.charset.Charset;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @SpringBootApplication
+@EnableJpaRepositories("com.br.peralles.jira.jiradatamanagement.rest.client")
+@EntityScan("com.br.peralles.jira.jiradatamanagement.rest.client")
 public class JiraDataManagementApplication {
 
 	private static final String username = "rodrigo.pecanha@zup.com.br";
@@ -30,32 +32,54 @@ public class JiraDataManagementApplication {
 		IssueNavigable issueNavigable = new IssueNavigable();
 
 		String urlProjeto = "https://zupjira.atlassian.net/rest/api/2/project";
-		String urlIssues = "https://zupjira.atlassian.net/rest/api/2/search?jql=project=ILBE&maxResults=10&fields=navigable";
+		String urlIssues = "https://zupjira.atlassian.net/rest/api/2/search?jql=project=ILBE&maxResults=1&fields=navigable";
+		String urlChangeLog;
 
 		RestTemplate restTemplate = new RestTemplate();
 		HttpHeaders httpHeaders = new HttpHeaders();
-
 		httpHeaders = createHeadersWithAuthentication();
-
 		HttpEntity<?> requestEntity = new HttpEntity(httpHeaders);
 
 		ResponseEntity<IssueLista> issueListaGet = restTemplate.exchange(urlIssues, HttpMethod.GET, requestEntity, IssueLista.class);
 
-		IssueLista issueLista = new IssueLista();
-		issueLista = issueListaGet.getBody();
+		IssueLista issueLista = issueListaGet.getBody();
 
+		List<IssueNavigable> listIssues = issueLista.getIssues();
 
-		/*
-			ObjectMapper mapper = new ObjectMapper();
-			String json;
-			json = projetos.getBody();
+		IssueNavigable issue;
+		IssueChangeLog issueChangeLog;
 
-			Map<Object, Object> map = new HashMap<Object, Object>();
-			map = mapper.readValue(json, new TypeReference<Map<Object, Object>>(){});
-			System.out.println(map);
+		List<Value> listValue;
+		List<Item> listItem;
 
-			Quote quote = restTemplate.getForObject("http://gturnquist-quoters.cfapps.io/api/random", Quote.class);
-		*/
+		Value value;
+		Item item;
+
+		for (int counter = 0; counter < listIssues.size(); counter++) {
+			issue = issueLista.getIssue(counter);
+			urlChangeLog = "https://zupjira.atlassian.net/rest/api/2/issue/" + issue.getKey() + "/changelog";
+
+			ResponseEntity<IssueChangeLog> issueChangeLogGet = restTemplate.exchange(urlChangeLog, HttpMethod.GET, requestEntity, IssueChangeLog.class);
+			issueChangeLog = issueChangeLogGet.getBody();
+
+			listValue = issueChangeLog.getValues();
+
+			for(int counterValue = 0; counterValue < listValue.size(); counterValue++){
+
+				value = listValue.get(counterValue);
+				listItem = value.getItems();
+
+				for(int counterItem = 0; counterItem < listItem.size(); counterItem++){
+
+					item = listItem.get(counterItem);
+
+					if(item.getField().equals("status"))
+					{
+						System.out.println(issue.getKey() + " - " + issueChangeLog.getTotal().toString() + " - " + value.getId().toString() + " - " + item.getField());
+					}
+				}
+			}
+		}
 	}
 
 	static private HttpHeaders createHeadersWithAuthentication() {
